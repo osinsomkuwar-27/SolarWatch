@@ -1,5 +1,0 @@
-backend
-config
-ml
-saved_models
-tests
