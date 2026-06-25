@@ -1,0 +1,175 @@
+# ============================================================
+# Aditya-L1 Solar Flare Prediction Pipeline — Configuration
+# ============================================================
+# All paths are relative to the project root (solar/).
+# Override any value with environment variables:
+#   SOLAR_DATA_ROOT, SOLAR_LOG_LEVEL, etc.
+
+project:
+  name: "aditya_l1_flare_prediction"
+  version: "1.0.0"
+  seed: 42
+
+# ----------------------------------------------------------
+# Data Paths
+# ----------------------------------------------------------
+paths:
+  data_root: "ml/data"
+  raw_solexs: "ml/data/raw/solexs"      # .lc.gz, .pi.gz, .gti.gz from PRADAN
+  raw_helios:  "ml/data/raw/helios"      # HEL1OS Level-1 zip contents
+  processed:   "ml/data/processed"       # NumPy / Parquet outputs
+  cache:       "ml/data/cache"           # Intermediate EDA artifacts
+  saved_models: "saved_models"
+  logs:         "logs"
+  notebooks:    "notebooks"
+
+# ----------------------------------------------------------
+# SoLEXS Instrument Parameters
+# (from SoLEXS Data Analysis Guide, Table 1)
+# ----------------------------------------------------------
+solexs:
+  detectors: ["SDD1", "SDD2"]
+  energy_range_kev: [2.0, 22.0]
+  spectral_fit_min_kev: 2.8          # Response unreliable below this
+  spectral_fit_max_kev: 22.0
+  n_channels: 340
+  channel_break: 168                  # Pairs above this channel
+  time_cadence_sec: 1
+  # File patterns (use strftime tokens + detector name)
+  lc_pattern:  "AL1_SOLEXS_{date}_SDD{n}_L1.lc.gz"
+  pi_pattern:  "AL1_SOLEXS_{date}_SDD{n}_L1.pi.gz"
+  gti_pattern: "AL1_SOLEXS_{date}_SDD{n}_L1.gti.gz"
+  recommended_detector: "SDD2"       # SDD1 saturates during high flux
+
+# ----------------------------------------------------------
+# HEL1OS Instrument Parameters
+# (from HEL1OS Data Analysis User Manual, Section 1 & 4)
+# ----------------------------------------------------------
+helios:
+  detectors: ["CdTe1", "CdTe2", "CZT1", "CZT2"]
+  energy_range_kev: [8.0, 150.0]
+  # Recommended minimum energies for analysis
+  cdte_fit_min_kev: 9.5
+  czt_fit_min_kev: 35.0
+  lc_cadence_sec: 1                  # Light curve cadence
+  spec_cadence_sec: 20               # Type-II spectral cadence
+  cdte_n_channels: 511
+  czt_n_channels: 341
+  # Default light curve energy bands (from manual Section 4, item 5)
+  cdte_bands_kev:
+    - [5.0,  20.0]
+    - [20.0, 30.0]
+    - [30.0, 40.0]
+    - [40.0, 60.0]
+    - [1.8,  90.0]   # Full SRF range
+  czt_bands_kev:
+    - [20.0,  40.0]
+    - [40.0,  60.0]
+    - [60.0,  80.0]
+    - [80.0,  150.0]
+    - [18.0,  160.0]  # Full SRF range
+
+# ----------------------------------------------------------
+# Preprocessing
+# ----------------------------------------------------------
+preprocessing:
+  # Resampling: resample both instruments to this cadence
+  common_cadence_sec: 60            # 1-minute bins for ML
+  # Count rate clipping (reject obvious cosmic ray spikes)
+  clip_sigma: 5.0
+  # Minimum GTI coverage fraction required to keep a time bin
+  min_gti_fraction: 0.5
+  # Background subtraction window (seconds before flare onset)
+  background_window_sec: 300
+
+# ----------------------------------------------------------
+# Flare Labelling
+# (inspired by GOES classes; adapted for SoLEXS count rates)
+# We derive our own thresholds from the data EDA.
+# Labels: 0=Quiet, 1=B/C-class, 2=M-class, 3=X-class
+# ----------------------------------------------------------
+labelling:
+  method: "count_rate_percentile"   # or "derivative_threshold"
+  quiet_percentile: 70
+  bc_percentile: 85
+  m_percentile: 95
+  # x_class: everything above m_percentile
+  peak_window_sec: 120              # Window to search for peak after onset
+
+# ----------------------------------------------------------
+# Feature Engineering
+# ----------------------------------------------------------
+features:
+  window_size_min: 60              # Lookback window for CNN/LSTM (minutes)
+  forecast_horizon_min: 60        # How far ahead to predict
+  step_size_min: 5                 # Stride between windows
+  # Which derived features to compute
+  include:
+    - "count_rate"                 # Raw SoLEXS count rate
+    - "log_count_rate"             # log10(count_rate)
+    - "derivative"                 # dCR/dt
+    - "rolling_mean_5m"
+    - "rolling_std_5m"
+    - "rolling_mean_15m"
+    - "hardness_ratio"             # HEL1OS: hard/soft band ratio
+    - "spectral_slope"             # Slope from SoLEXS spectrum
+    - "background_excess"          # CR - background_median
+
+# ----------------------------------------------------------
+# CNN Model (Current Flare Classification)
+# ----------------------------------------------------------
+cnn:
+  input_length: 60                 # Timesteps (= window_size_min / common_cadence_min)
+  n_features: 9                    # Matches feature list above
+  n_classes: 4                     # Quiet, B/C, M, X
+  filters: [64, 128, 64]
+  kernel_sizes: [7, 5, 3]
+  dropout: 0.3
+  dense_units: [128, 64]
+  learning_rate: 1.0e-3
+  batch_size: 64
+  epochs: 50
+  early_stopping_patience: 8
+
+# ----------------------------------------------------------
+# LSTM Model (Next-Hour Flare Prediction)
+# ----------------------------------------------------------
+lstm:
+  input_length: 60                 # 60 timesteps of 1-min data
+  n_features: 9
+  n_classes: 4
+  hidden_units: [128, 64]
+  dropout: 0.3
+  recurrent_dropout: 0.2
+  dense_units: [64]
+  learning_rate: 5.0e-4
+  batch_size: 32
+  epochs: 80
+  early_stopping_patience: 10
+
+# ----------------------------------------------------------
+# Training / Evaluation
+# ----------------------------------------------------------
+training:
+  val_fraction: 0.15
+  test_fraction: 0.15
+  # Temporal split (never shuffle time series randomly)
+  split_strategy: "temporal"
+  # Class weights: flares are rare events
+  use_class_weights: true
+  # Mixed precision on GPU
+  mixed_precision: false
+
+evaluation:
+  metrics: ["accuracy", "precision", "recall", "f1", "roc_auc", "pr_auc"]
+  cm_normalize: "true"             # Normalize confusion matrix rows
+
+# ----------------------------------------------------------
+# Logging
+# ----------------------------------------------------------
+logging:
+  level: "INFO"                    # DEBUG | INFO | WARNING | ERROR
+  format: "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
+  file: "logs/pipeline.log"
+  max_bytes: 10_485_760            # 10 MB
+  backup_count: 5
