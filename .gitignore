@@ -5,7 +5,6 @@
 logs/
 
 # Raw data
-ml/data/raw/solexs/*.lc
 ml/data/raw/solexs/*.gz
 ml/data/raw/helios/*.fits
 ml/data/raw/helios/*.gz
