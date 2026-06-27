@@ -47,3 +47,9 @@ env/
 # OS files
 .DS_Store
 Thumbs.db
+
+.env
+venv/
+__pycache__/
+*.pyc
+solar_flare.db
