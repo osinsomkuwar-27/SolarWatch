@@ -60,8 +60,20 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     io = parser.add_argument_group("I/O")
     io.add_argument("--raw-data-dir", type=str, default=None)
     io.add_argument("--output-dir",   type=str, default=None)
-    io.add_argument("--instrument",   type=str, default=None,
-                    help="Tag written to scaler filename (e.g. 'solexs', 'helios').")
+    io.add_argument(
+        "--instrument",
+        type=str,
+        default=None,
+        choices=["solexs", "helios", "combined"],
+        help=(
+            "Instrument whose feature CSVs to build from. "
+            "Determines which filenames are matched and how the scaler is named. "
+            "Choices: 'solexs' (features_solexs_<det>_<date>.csv), "
+            "'helios' (features_helios_<det>_<date>.csv), "
+            "'combined' (features_combined_<date>.csv). "
+            "If omitted, the instrument type is auto-inferred from directory contents."
+        ),
+    )
 
     # Window
     win = parser.add_argument_group("Window / horizon")

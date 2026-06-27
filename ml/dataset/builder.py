@@ -86,9 +86,16 @@ class DatasetBuilder:
         there; this class contains no magic numbers.
     """
 
-    # Regex that matches filenames produced by the Feature Pipeline:
-    # features_<INSTRUMENT><DATE>.csv  e.g. features_SDD2_20260621.csv
+    # Matches any features_*.csv produced by the Feature Pipeline.
     _CSV_PATTERN = re.compile(r"^features_.+\.csv$", re.IGNORECASE)
+
+    # Per-instrument filename patterns for filtered discovery and auto-inference.
+    # Group 1 of each pattern is the date token (used for sorting).
+    _INSTRUMENT_PATTERNS: dict = {
+        "solexs":   re.compile(r"^features_solexs_[^_]+_(\d{8})\.csv$",  re.IGNORECASE),
+        "helios":   re.compile(r"^features_helios_[^_]+_(\d{8})\.csv$",  re.IGNORECASE),
+        "combined": re.compile(r"^features_combined_(\d{8})\.csv$",       re.IGNORECASE),
+    }
 
     def __init__(self, config: DatasetConfig) -> None:
         config.validate()
@@ -144,21 +151,98 @@ class DatasetBuilder:
     # ------------------------------------------------------------------
 
     def _discover_csvs(self) -> List[Path]:
-        """Return sorted list of feature CSV paths found in raw_data_dir."""
+        """
+        Return a chronologically sorted list of feature CSV paths found in
+        raw_data_dir, filtered by instrument_tag.
+
+        Supported filename conventions
+        --------------------------------
+        solexs   : features_solexs_<detector>_<YYYYMMDD>.csv
+        helios   : features_helios_<detector>_<YYYYMMDD>.csv
+        combined : features_combined_<YYYYMMDD>.csv
+
+        If instrument_tag was not explicitly set by the caller (i.e. it still
+        holds the dataclass default of ``"solexs"``), this method first checks
+        whether the directory contains *only* files that unambiguously match a
+        single instrument type and, if so, auto-infers the tag.  A warning is
+        logged so the operator knows inference occurred.
+        """
         if not self._raw_dir.exists():
             raise FileNotFoundError(
                 f"raw_data_dir does not exist: {self._raw_dir.resolve()}"
             )
-        files = sorted(
+
+        all_csv = [
             p for p in self._raw_dir.iterdir()
             if p.is_file() and self._CSV_PATTERN.match(p.name)
-        )
-        if not files:
+        ]
+
+        # ── Auto-infer instrument tag when not explicitly provided ────────
+        # We treat the default value ("solexs") as "not explicitly set" only
+        # when the directory contains no solexs files but does contain files
+        # of exactly one other instrument type.  Explicit CLI --instrument
+        # flags flow through DatasetConfig and are always respected as-is.
+        tag = self.cfg.instrument_tag
+        matched_for_tag = self._filter_by_instrument(all_csv, tag)
+
+        if not matched_for_tag:
+            # Current tag yields nothing — attempt auto-inference.
+            inferred: Optional[str] = None
+            for candidate in ("solexs", "helios", "combined"):
+                if candidate == tag:
+                    continue
+                if self._filter_by_instrument(all_csv, candidate):
+                    if inferred is not None:
+                        # Multiple instrument types present: ambiguous.
+                        inferred = None
+                        break
+                    inferred = candidate
+
+            if inferred is not None:
+                logger.warning(
+                    "instrument_tag=%r yielded no files; auto-inferred %r "
+                    "from directory contents.  Pass --instrument explicitly "
+                    "to suppress this warning.",
+                    tag,
+                    inferred,
+                )
+                self.cfg.instrument_tag = inferred
+                tag = inferred
+                matched_for_tag = self._filter_by_instrument(all_csv, tag)
+
+        if not matched_for_tag:
             raise FileNotFoundError(
-                f"No feature CSVs matching 'features_*.csv' found in {self._raw_dir}"
+                f"No feature CSVs matching instrument_tag={tag!r} found in "
+                f"{self._raw_dir}.  Expected filenames:\n"
+                f"  solexs   → features_solexs_<detector>_<YYYYMMDD>.csv\n"
+                f"  helios   → features_helios_<detector>_<YYYYMMDD>.csv\n"
+                f"  combined → features_combined_<YYYYMMDD>.csv"
             )
-        logger.info("Discovered %d CSV file(s): %s", len(files), [f.name for f in files])
+
+        # Chronological sort: extract the date token captured by the pattern.
+        pattern = self._INSTRUMENT_PATTERNS[tag]
+        files = sorted(
+            matched_for_tag,
+            key=lambda p: (pattern.match(p.name).group(1), p.name),
+        )
+
+        logger.info(
+            "Discovered %d CSV file(s) for instrument=%r: %s",
+            len(files),
+            tag,
+            [f.name for f in files],
+        )
         return files
+
+    def _filter_by_instrument(self, paths: List[Path], tag: str) -> List[Path]:
+        """Return only paths whose filename matches the pattern for *tag*."""
+        pattern = self._INSTRUMENT_PATTERNS.get(tag)
+        if pattern is None:
+            raise ValueError(
+                f"Unknown instrument_tag: {tag!r}. "
+                f"Valid values: {list(self._INSTRUMENT_PATTERNS)}"
+            )
+        return [p for p in paths if pattern.match(p.name)]
 
     # ------------------------------------------------------------------
     # Step 2 – Load and concatenate

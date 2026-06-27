@@ -87,6 +87,10 @@ class DatasetConfig:
         Written to metadata and used to namespace scaler files.
     """
 
+    # In the DatasetConfig dataclass — replace the existing instrument_tag field:
+
+    instrument_tag: Literal["solexs", "helios", "combined"] = "solexs"
+
     # I/O
     raw_data_dir: str = "ml/data/processed"
     output_dir: str = "ml/data/processed"
@@ -145,6 +149,8 @@ class DatasetConfig:
             raise ValueError(f"Unknown imputation_strategy: {self.imputation_strategy!r}")
         if not (0.0 <= self.min_valid_fraction <= 1.0):
             raise ValueError(f"min_valid_fraction must be in [0, 1], got {self.min_valid_fraction}")
+        if self.instrument_tag not in ("solexs", "helios", "combined"):
+            raise ValueError(f"instrument_tag must be 'solexs', 'helios', or 'combined', got {self.instrument_tag!r}")
 
     # -----------------------------------------------------------------------
     # Serialisation helpers
