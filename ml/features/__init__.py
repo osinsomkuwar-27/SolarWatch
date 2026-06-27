@@ -1,37 +1,37 @@
 """
-ml/features
-============
-Feature engineering for the Aditya-L1 Solar Flare Prediction pipeline.
+solar.ml.features
+==================
 
-Repository layout
------------------
-ml/features/
-    __init__.py          ← This file; exports the public API
-    basic_features.py    ← Rolling statistics, log-transform, RMS, energy
-    temporal_features.py ← Derivatives, lag features, EMA, rolling median
-    flare_features.py    ← Peak detection, rise/decay time, SNR, flux ratio
-    spectral_features.py ← Energy bands, hardness ratio, spectral entropy
-    feature_pipeline.py  ← Orchestrator: runs all modules on a DataFrame
+Feature engineering pipeline for solar flare X-ray light curve data
+(e.g. GOES soft X-ray, RHESSI hard X-ray count rates).
 
-Data requirements per feature class
--------------------------------------
-Module              | .lc | GTI | .pi | HEL1OS
---------------------|-----|-----|-----|-------
-basic_features      |  ✓  |     |     |
-temporal_features   |  ✓  |     |     |
-flare_features      |  ✓  |  ✓  |     |
-spectral_features   |     |     |  ✓  |   ✓
+Scientific grounding: Benz, A.O., "Flare Observations",
+Living Rev. Solar Phys., 5, (2008), 1.
 
-Scientific reference
----------------------
-All feature definitions are grounded in:
-    Benz, A.O. (2008), "Flare Observations",
-    Living Reviews in Solar Physics, 5, 1.
-    https://doi.org/10.12942/lrsp-2008-1
+Modules
+-------
+basic_features      Rolling statistics on raw count rate (log, mean, std, ...)
+temporal_features   Derivatives, lags, EMA, rolling median (timing/dynamics)
+flare_features      Soft-hard-soft index, Neupert effect, phase classification
+spectral_features   Power-law / thermal spectral fit features
+feature_pipeline    Orchestrator: chains all of the above on one DataFrame
 """
 
-from ml.features.basic_features import BasicFeatureExtractor
+from .basic_features import BasicFeatures, BasicFeatureConfig
+from .temporal_features import TemporalFeatures, TemporalFeatureConfig
+from .flare_features import FlareFeatures, FlareFeatureConfig
+from .spectral_features import SpectralFeatures, SpectralFeatureConfig
+from .feature_pipeline import FeaturePipeline, PipelineConfig
 
 __all__ = [
-    "BasicFeatureExtractor",
+    "BasicFeatures",
+    "BasicFeatureConfig",
+    "TemporalFeatures",
+    "TemporalFeatureConfig",
+    "FlareFeatures",
+    "FlareFeatureConfig",
+    "SpectralFeatures",
+    "SpectralFeatureConfig",
+    "FeaturePipeline",
+    "PipelineConfig",
 ]

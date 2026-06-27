@@ -460,11 +460,19 @@ class SoLEXSLoader:
         gti_file = self._data_dir / f"{base}.gti.gz"
         pi_file  = self._data_dir / f"{base}.pi.gz"
 
-        # Also accept uncompressed variants
-        for suffix, path_var in [(".gz", lc_file)]:
-            if not lc_file.exists():
-                lc_file = self._data_dir / f"{base}.lc"
+        # Try compressed files first, then fall back to uncompressed
 
+        lc_file = self._data_dir / f"{base}.lc.gz"
+        if not lc_file.exists():
+            lc_file = self._data_dir / f"{base}.lc"
+
+        gti_file = self._data_dir / f"{base}.gti.gz"
+        if not gti_file.exists():
+            gti_file = self._data_dir / f"{base}.gti"
+
+        pi_file = self._data_dir / f"{base}.pi.gz"
+        if not pi_file.exists():
+            pi_file = self._data_dir / f"{base}.pi"
         lc  = self.load_lc(lc_file, detector=detector, date_str=date_str)
         gti = self.load_gti(gti_file)
         pi_data: Optional[PISpectrum] = None
