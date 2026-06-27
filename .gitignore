@@ -4,14 +4,22 @@
 # Logs
 logs/
 
-# Raw data
-ml/data/raw/solexs/*.gz
-ml/data/raw/helios/*.fits
-ml/data/raw/helios/*.gz
-
-# Processed data
-ml/data/processed/
+# Generated data
 ml/data/cache/
+ml/data/processed/
+
+# Raw SoLEXS data
+ml/data/raw/solexs/*.lc
+ml/data/raw/solexs/*.lc.gz
+ml/data/raw/solexs/*.pi
+ml/data/raw/solexs/*.pi.gz
+ml/data/raw/solexs/*.gti
+ml/data/raw/solexs/*.gti.gz
+
+# Raw HEL1OS data
+ml/data/raw/helios/**/*.fits
+ml/data/raw/helios/**/*.fits.gz
+ml/data/raw/helios/**/*.gz
 
 # Trained models
 saved_models/*.keras

@@ -173,3 +173,4 @@ logging:
   file: "logs/pipeline.log"
   max_bytes: 10_485_760            # 10 MB
   backup_count: 5
+

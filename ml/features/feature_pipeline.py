@@ -9,10 +9,17 @@ plain dict (e.g. parsed from YAML/JSON config files).
 
 Usage
 -----
->>> from ml.features import FeaturePipeline, PipelineConfig
+>>> from solar.ml.features import FeaturePipeline, PipelineConfig
 >>> pipe = FeaturePipeline(PipelineConfig())
 >>> features_df = pipe.transform(raw_df)
 >>> pipe.feature_names()  # full list of generated columns, in order
+
+Extended for HEL1OS / combined instrument mode
+----------------------------------------------
+>>> from solar.ml.features.feature_pipeline import CombinedFeaturePipeline
+>>> combined = CombinedFeaturePipeline(solexs_config=PipelineConfig(),
+...                                    helios_config=HEL1OSPipelineConfig())
+>>> out = combined.transform(df)   # df must have both SoLEXS and HEL1OS columns
 """
 
 from __future__ import annotations
@@ -50,7 +57,7 @@ class PipelineConfig:
 
     @classmethod
     def from_dict(cls, d: Dict[str, Any]) -> "PipelineConfig":
-        """Build a full pipeline config from a nested plain dict, e.g.:
+        """Build a full pipeline config from a nested plain dict, e.g.::
 
             {
               "basic":    {"windows_sec": [60, 300]},
@@ -148,3 +155,103 @@ class FeaturePipeline:
                     f"FeaturePipeline stage '{stage_name}' failed: {exc}"
                 ) from exc
         return results
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# NEW: Combined instrument pipeline — HEL1OS extension
+# ══════════════════════════════════════════════════════════════════════════════
+
+class CombinedFeaturePipeline:
+    """Run SoLEXS and HEL1OS feature pipelines over a combined DataFrame.
+
+    The input DataFrame must contain columns required by both pipelines.
+    Features from both instruments are concatenated in the output.  The
+    two pipelines do not share state — each transforms independently.
+
+    This class does NOT modify FeaturePipeline or HEL1OSFeaturePipeline;
+    it simply delegates to both and merges their outputs.
+
+    Parameters
+    ----------
+    solexs_config : PipelineConfig or None
+        SoLEXS (soft X-ray) pipeline configuration.
+    helios_config : HEL1OSPipelineConfig or None
+        HEL1OS (hard X-ray) pipeline configuration.
+    instrument : str
+        One of 'solexs', 'helios', 'combined'.  Controls which pipelines
+        are actually run.
+    """
+
+    INSTRUMENT_SOLEXS   = "solexs"
+    INSTRUMENT_HELIOS   = "helios"
+    INSTRUMENT_COMBINED = "combined"
+
+    def __init__(
+        self,
+        solexs_config:  Optional[PipelineConfig]      = None,
+        helios_config:  Optional["HEL1OSPipelineConfig"] = None,  # noqa: F821
+        instrument:     str = "combined",
+    ) -> None:
+        if instrument not in (
+            self.INSTRUMENT_SOLEXS,
+            self.INSTRUMENT_HELIOS,
+            self.INSTRUMENT_COMBINED,
+        ):
+            raise ValueError(
+                f"instrument must be one of 'solexs', 'helios', 'combined'; "
+                f"got '{instrument}'"
+            )
+        self.instrument = instrument
+
+        self._solexs_pipe: Optional[FeaturePipeline] = None
+        self._helios_pipe = None
+
+        if instrument in (self.INSTRUMENT_SOLEXS, self.INSTRUMENT_COMBINED):
+            self._solexs_pipe = FeaturePipeline(solexs_config)
+
+        if instrument in (self.INSTRUMENT_HELIOS, self.INSTRUMENT_COMBINED):
+            from .helios_features.helios_pipeline import (
+                HEL1OSFeaturePipeline,
+                HEL1OSPipelineConfig,
+            )
+            self._helios_pipe = HEL1OSFeaturePipeline(helios_config)
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def feature_names(self) -> List[str]:
+        """Ordered list of all feature columns both pipelines will add."""
+        names: List[str] = []
+        if self._solexs_pipe is not None:
+            names.extend(self._solexs_pipe.feature_names())
+        if self._helios_pipe is not None:
+            names.extend(self._helios_pipe.feature_names())
+        return names
+
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Run both pipelines in order and return the merged output.
+
+        SoLEXS features are computed first; the HEL1OS pipeline then
+        receives the SoLEXS-enriched DataFrame (so HEL1OS stages do not
+        accidentally rely on SoLEXS-derived columns, but the column names
+        are unique across instruments, so no collisions occur).
+
+        Raises
+        ------
+        RuntimeError  with pipeline name attached on failure.
+        """
+        out = df
+        if self._solexs_pipe is not None:
+            try:
+                out = self._solexs_pipe.transform(out)
+            except RuntimeError as exc:
+                raise RuntimeError(f"[SoLEXS] {exc}") from exc
+
+        if self._helios_pipe is not None:
+            try:
+                out = self._helios_pipe.transform(out)
+            except RuntimeError as exc:
+                raise RuntimeError(f"[HEL1OS] {exc}") from exc
+
+        return out
