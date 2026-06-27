@@ -1,0 +1,36 @@
+{
+  "timestamp": "2026-06-21T19:25:00Z",
+  "model_version": "v1.0.0",
+  "data_quality": {
+    "status": "ok",
+    "reason": null,
+    "lookback_seconds_available": 1800,
+    "lookback_seconds_required": 1800
+  },
+  "nowcast": {
+    "flare_probability": 0.87,
+    "flare_class": "M",
+    "confidence": 0.82,
+    "is_flare_active": true
+  },
+  "forecast": {
+    "flare_probability_30min": 0.73,
+    "flare_probability_60min": 0.51,
+    "predicted_class": "M",
+    "estimated_onset_minutes": 12
+  },
+  "raw_features": {
+    "slx_counts": 4200.0,
+    "cdte_broadband": null,
+    "czt_broadband": null,
+    "hardness_ratio": 0.25,
+    "hardness_smoothed": 0.23,
+    "dCR_dt": 0.003,
+    "d2CR_dt2": 0.0001,
+    "ema_60s": 11.2,
+    "ema_300s": 10.8,
+    "neupert_corr": 0.12,
+    "flare_phase": "impulsive",
+    "photon_index_fit": null
+  }
+}
