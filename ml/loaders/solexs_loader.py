@@ -269,13 +269,13 @@ class SoLEXSLoader:
             raise FileNotFoundError(f"FITS file not found: {filepath}")
         return fits.open(str(filepath), memmap=False)
 
-    def _resolve(self, filename: str | Path) -> Path:
-        """
-        If filename is absolute, use it directly.
-        Otherwise, join with data_dir.
-        """
+    def _resolve(self, filename):
         p = Path(filename)
-        return p if p.is_absolute() else self._data_dir / p
+
+        if p.exists():
+            return p
+
+        return self._data_dir / p
 
     # ── Public API ────────────────────────────────────────────
 

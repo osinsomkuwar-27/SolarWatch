@@ -7,6 +7,8 @@ logs/
 # Generated data
 ml/data/cache/
 ml/data/processed/
+ml/data/raw/
+ml/data/extracted/
 
 # Raw SoLEXS data
 ml/data/raw/solexs/*.lc
