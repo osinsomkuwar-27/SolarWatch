@@ -1,0 +1,147 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+
+  --color-background: var(--bg-page);
+  --color-foreground: var(--text-primary);
+  --color-surface: var(--bg-surface);
+  --color-card: var(--bg-card);
+  --color-card-foreground: var(--text-primary);
+  --color-popover: var(--bg-card);
+  --color-popover-foreground: var(--text-primary);
+  --color-tertiary: var(--bg-elevated);
+
+  --color-primary: var(--accent-sky);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--bg-elevated);
+  --color-secondary-foreground: var(--text-primary);
+
+  --color-muted: var(--bg-elevated);
+  --color-muted-foreground: var(--text-secondary);
+  --color-accent: var(--accent-sky);
+  --color-accent-foreground: #ffffff;
+
+  --color-destructive: var(--alert-red);
+  --color-destructive-foreground: #ffffff;
+
+  --color-border: var(--border-default);
+  --color-input: var(--border-default);
+  --color-ring: var(--accent-sky);
+
+  --color-sky: var(--accent-sky);
+  --color-orange: var(--accent-amber);
+  --color-solar: var(--accent-amber);
+  --color-alert: var(--alert-red);
+  --color-safe: var(--safe-green);
+  --color-text-muted: var(--text-secondary);
+  --color-text-faint: var(--text-tertiary);
+
+  --color-sidebar: var(--bg-surface);
+  --color-sidebar-foreground: var(--text-primary);
+  --color-sidebar-primary: var(--accent-sky);
+  --color-sidebar-primary-foreground: #ffffff;
+  --color-sidebar-accent: var(--bg-elevated);
+  --color-sidebar-accent-foreground: var(--text-primary);
+  --color-sidebar-border: var(--border-default);
+  --color-sidebar-ring: var(--accent-sky);
+
+  --font-sans: "Work Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+:root {
+  --bg-page:     #F0F4F8;
+  --bg-surface:  #F8FAFC;
+  --bg-card:     #FFFFFF;
+  --bg-elevated: #E2E8F0;
+
+  --tint-sky:   #DBEAFE;
+  --tint-amber: #FEF9C3;
+  --tint-rose:  #FCE7F3;
+  --tint-sage:  #DCFCE7;
+
+  --accent-sky:   #1D4ED8;
+  --accent-amber: #92400E;
+  --alert-red:    #991B1B;
+  --safe-green:   #166534;
+
+  --text-primary:   #0F172A;
+  --text-secondary: #334155;
+  --text-tertiary:  #64748B;
+
+  --border-default: #0F172A;
+  --border-strong:  #0F172A;
+  --shadow-card:    3px 3px 0 #0F172A;
+}
+
+@layer base {
+  * {
+    border-color: var(--border-default);
+  }
+  html, body {
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, .font-serif {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+  h1 em, h2 em, h3 em, .font-serif em, .font-serif i {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.45); }
+  50%      { box-shadow: 0 0 0 10px rgba(248, 113, 113, 0); }
+}
+
+@utility fade-in {
+  animation: fadeInUp 0.4s ease forwards;
+}
+@utility pulse-glow {
+  animation: pulse-glow 1.8s ease-in-out infinite;
+}
+@utility glow-sky {
+  box-shadow: 0 0 24px rgba(56, 189, 248, 0.18);
+}
+@utility card-surface {
+  background-color: var(--bg-card);
+  border: 1.5px solid #0A0A0A;
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+@utility card-hover {
+  &:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 5px 0 #0A0A0A;
+  }
+}
+@utility card-tint-sky    { background-color: var(--tint-sky); }
+@utility card-tint-amber  { background-color: var(--tint-amber); }
+@utility card-tint-rose   { background-color: var(--tint-rose); }
+@utility card-tint-sage   { background-color: var(--tint-sage); }
+@utility hairline {
+  border-top: 1.5px solid #0A0A0A;
+}
