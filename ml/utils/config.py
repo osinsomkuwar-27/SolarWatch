@@ -31,6 +31,7 @@ class PathsConfig:
     data_root:    Path
     raw_solexs:   Path
     raw_helios:   Path
+    extracted:    Path
     processed:    Path
     cache:        Path
     saved_models: Path
@@ -254,6 +255,7 @@ def load_config(config_path: str | Path | None = None) -> PipelineConfig:
         data_root    = _abs(raw_paths["data_root"]),
         raw_solexs   = _abs(raw_paths["raw_solexs"]),
         raw_helios   = _abs(raw_paths["raw_helios"]),
+        extracted    = _abs(raw_paths["extracted"]),
         processed    = _abs(raw_paths["processed"]),
         cache        = _abs(raw_paths["cache"]),
         saved_models = _abs(raw_paths["saved_models"]),

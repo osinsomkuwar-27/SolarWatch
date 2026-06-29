@@ -16,7 +16,8 @@ project:
 paths:
   data_root: "ml/data"
   raw_solexs: "ml/data/raw/solexs"      # .lc.gz, .pi.gz, .gti.gz from PRADAN
-  raw_helios:  "ml/data/raw/helios"      # HEL1OS Level-1 zip contents
+  raw_helios:  "ml/data/raw/helios"
+  extracted:     ml/data/extracted      # HEL1OS Level-1 zip contents
   processed:   "ml/data/processed"       # NumPy / Parquet outputs
   cache:       "ml/data/cache"           # Intermediate EDA artifacts
   saved_models: "saved_models"

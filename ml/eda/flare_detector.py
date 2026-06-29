@@ -246,10 +246,11 @@ class FlareDetector:
 
         # 2. Background stats — use the lower 50th percentile (quiet Sun)
         background = float(np.nanpercentile(cr_smooth, 50))
-        sigma_bg   = float(np.nanstd(
-            cr_smooth[cr_smooth < np.nanpercentile(cr_smooth, 75)]
-        ))
-        if sigma_bg < 1e-6:
+        quiet_bg = cr_smooth[cr_smooth < np.nanpercentile(cr_smooth, 75)]
+        quiet_bg = np.asarray(quiet_bg, dtype=float)
+        quiet_bg = quiet_bg[np.isfinite(quiet_bg)]
+        sigma_bg = float(np.nanstd(quiet_bg)) if quiet_bg.size >= 2 else float("nan")
+        if not np.isfinite(sigma_bg) or sigma_bg < 1e-6:
             sigma_bg = max(background * 0.05, 1.0)
             logger.debug("σ_background near-zero; using 5%% of background")
 
