@@ -1,4 +1,4 @@
-import { predictions } from "@/lib/mock-data";
+import { predictions as mockPredictions } from "@/lib/mock-data";
 
 function severity(p: number) {
   if (p > 0.6) return { color: "#B91C1C", label: "high", bg: "#FEE2E2" };
@@ -6,7 +6,28 @@ function severity(p: number) {
   return { color: "#166534", label: "low", bg: "#DCFCE7" };
 }
 
-export function PredictionCards() {
+type Props = {
+  nowcastProbability?: number;
+  forecast30MinProbability?: number;
+  forecast60MinProbability?: number;
+};
+
+export function PredictionCards({
+  nowcastProbability,
+  forecast30MinProbability,
+  forecast60MinProbability,
+}: Props) {
+  const predictions =
+    nowcastProbability !== undefined &&
+    forecast30MinProbability !== undefined &&
+    forecast60MinProbability !== undefined
+      ? [
+          { horizon: "Nowcast", probability: nowcastProbability },
+          { horizon: "30 min", probability: forecast30MinProbability },
+          { horizon: "60 min", probability: forecast60MinProbability },
+        ]
+      : mockPredictions;
+
   const maxBarHeight = 150;
   return (
     <div className="p-6 pb-3.5 fade-in rounded-none border-2 border-black">
@@ -110,6 +131,7 @@ export function PredictionCards() {
           })}
         </div>
       </div>
+
 
       <div className="flex gap-7 mt-8 pt-3.5 border-t border-border">
         <div>

@@ -24,6 +24,9 @@ app.include_router(router)
 
 @app.on_event("startup")
 def startup():
+    from app.services.watcher import read_and_ingest
+    from app.services.scheduler import JSON_PATH
+    read_and_ingest(JSON_PATH)
     scheduler.start()
 
 
