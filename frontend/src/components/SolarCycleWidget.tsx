@@ -1,8 +1,8 @@
 export function SolarCycleWidget({ percent = 47 }: { percent?: number }) {
   return (
-    <div className="card-surface card-tint-amber p-5 fade-in">
+    <div className="p-5 fade-in border-2 border-black rounded-2xl bg-white">
       <div className="flex items-baseline justify-between mb-3">
-        <h3 className="font-serif text-base text-foreground">Solar Cycle 25</h3>
+        <h3 className="font-serif text-base text-foreground">Solar Cycle</h3>
         <span className="font-mono text-xs uppercase tracking-wider text-text-faint">
           2019 → ~2030
         </span>
@@ -12,7 +12,7 @@ export function SolarCycleWidget({ percent = 47 }: { percent?: number }) {
           className="h-full rounded-full"
           style={{
             width: `${percent}%`,
-            background: "linear-gradient(90deg, #38BDF8, #FBBF24)",
+            background: "linear-gradient(90deg, #16A34A, #DC2626)",
           }}
         />
       </div>
