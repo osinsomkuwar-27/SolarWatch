@@ -67,3 +67,6 @@ solar_flare.db
 
 reports/
 *.log
+
+ml/models/*.pkl
+*.parquet
