@@ -9,6 +9,7 @@ ml/data/cache/
 ml/data/processed/
 ml/data/raw/
 ml/data/extracted/
+ml/data/features/
 
 # Raw SoLEXS data
 ml/data/raw/solexs/*.lc
@@ -65,3 +66,4 @@ __pycache__/
 solar_flare.db
 
 reports/
+*.log

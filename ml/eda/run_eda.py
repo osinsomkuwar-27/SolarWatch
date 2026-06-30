@@ -39,10 +39,46 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
 _HELIOS_ALL_DETECTORS = ["CZT1", "CZT2", "CdTe1", "CdTe2"]
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# NEW: processed-dataframe writer — EDA becomes the producer for Feature Eng.
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _save_processed_dataframe(time_unix, count_rate, detector, date_str, instrument, processed_root):
+    """
+    Persist the cleaned, GTI-filtered observation dataframe so that
+    downstream feature engineering never has to touch the raw loaders.
+
+    Written to:
+        ml/data/processed/solexs/<date>.csv
+        ml/data/processed/helios/<date>_<detector>.csv
+
+    Returns the path written.
+    """
+    proc_dir = Path(processed_root) / instrument
+    proc_dir.mkdir(parents=True, exist_ok=True)
+
+    df = pd.DataFrame({
+        "time": pd.to_datetime(np.asarray(time_unix), unit="s", utc=True),
+        "CR": np.asarray(count_rate),
+    })
+    df["detector"] = detector
+    df["observation_date"] = date_str
+
+    if instrument == "solexs":
+        out_path = proc_dir / f"{date_str}.csv"
+    else:
+        out_path = proc_dir / f"{date_str}_{detector}.csv"
+
+    df.to_csv(out_path, index=False)
+    logger.info("Saved processed %s dataframe: %s (%d rows)", instrument, out_path, len(df))
+    return out_path
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -118,9 +154,13 @@ def _build_arg_parser() -> argparse.ArgumentParser:
 # Stage 1 — SoLEXS
 # ══════════════════════════════════════════════════════════════════════════════
 
-def run_solexs(days, detector, fd, solexs_stats, solexs_plotter, cache_root):
+def run_solexs(days, detector, fd, solexs_stats, solexs_plotter, cache_root, processed_root):
     """
     Run flare detection, plotting, and statistics for every SoLEXS day.
+
+    Also persists the full cleaned, GTI-filtered observation dataframe to
+    `processed_root/solexs/<date>.csv` so the feature-engineering stage
+    can consume it directly without reloading raw files.
 
     Returns:
         reports      (list)  — one EDAReport per successfully processed day
@@ -171,6 +211,11 @@ def run_solexs(days, detector, fd, solexs_stats, solexs_plotter, cache_root):
                 cache_dir / f"flares_{detector}_{day.date_str}.csv", index=False
             )
 
+        # ── NEW: persist the full cleaned, GTI-filtered dataframe ───────────
+        _save_processed_dataframe(
+            t_valid, cr_valid, detector, day.date_str, "solexs", processed_root
+        )
+
         reports.append(report)
         all_flares[day.date_str] = flares
 
@@ -182,9 +227,12 @@ def run_solexs(days, detector, fd, solexs_stats, solexs_plotter, cache_root):
 # ══════════════════════════════════════════════════════════════════════════════
 
 def run_helios(loader, detectors_to_run, date_filter,
-               fd, helios_stats, helios_plotter, cache_root):
+               fd, helios_stats, helios_plotter, cache_root, processed_root):
     """
     Load and process all requested HEL1OS detectors.
+
+    Also persists the full cleaned observation dataframe for each
+    (date, detector) pair to `processed_root/helios/<date>_<detector>.csv`.
 
     Returns:
         helios_curves  (dict)  — det → list[HEL1OSLightCurve]
@@ -237,6 +285,11 @@ def run_helios(loader, detectors_to_run, date_filter,
                 flare_df.to_csv(
                     h_cache / f"helios_flares_{det}_{lc.date_str}.csv", index=False
                 )
+
+            # ── NEW: persist the full cleaned dataframe per (date, detector) ─
+            _save_processed_dataframe(
+                full.time_unix, full.count_rate, det, lc.date_str, "helios", processed_root
+            )
 
             helios_reports[det].append(report)
 
@@ -423,7 +476,8 @@ def run_eda(args: argparse.Namespace) -> None:
 
     # ── Run SoLEXS EDA ───────────────────────────────────────────────────────
     solexs_reports, all_flares, missing_days = run_solexs(
-        days, args.detector, fd, solexs_stats, solexs_plotter, cfg.paths.cache
+        days, args.detector, fd, solexs_stats, solexs_plotter,
+        cfg.paths.cache, cfg.paths.processed,
     )
     _print_solexs_summary(solexs_reports, missing_days, all_flares, args.detector)
 
@@ -435,7 +489,8 @@ def run_eda(args: argparse.Namespace) -> None:
     print(f"  Loading HEL1OS [{', '.join(detectors_to_run)}]...", flush=True)
     helios_curves, helios_reports = run_helios(
         loader, detectors_to_run, args.date,
-        fd, helios_stats, helios_plotter, cfg.paths.cache,
+        fd, helios_stats, helios_plotter,
+        cfg.paths.cache, cfg.paths.processed,
     )
 
     # ── Cross-instrument analysis (always) ───────────────────────────────────

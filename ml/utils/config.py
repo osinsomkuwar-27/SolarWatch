@@ -87,6 +87,22 @@ class PreprocessingConfig:
     clip_sigma:             float
     min_gti_fraction:       float
     background_window_sec:  int
+    merge_tolerance_sec:    float = 30.0
+
+    def __post_init__(self) -> None:
+        """Validate the SoLEXS/HEL1OS merge_asof synchronization tolerance."""
+        try:
+            self.merge_tolerance_sec = float(self.merge_tolerance_sec)
+        except (TypeError, ValueError):
+            raise ValueError(
+                f"preprocessing.merge_tolerance_sec must be a number; "
+                f"got {self.merge_tolerance_sec!r}"
+            )
+        if self.merge_tolerance_sec <= 0:
+            raise ValueError(
+                f"preprocessing.merge_tolerance_sec must be positive; "
+                f"got {self.merge_tolerance_sec}"
+            )
 
 
 @dataclass

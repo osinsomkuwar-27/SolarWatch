@@ -82,6 +82,7 @@ preprocessing:
   min_gti_fraction: 0.5
   # Background subtraction window (seconds before flare onset)
   background_window_sec: 300
+  merge_tolerance_sec: 30 
 
 # ----------------------------------------------------------
 # Flare Labelling
