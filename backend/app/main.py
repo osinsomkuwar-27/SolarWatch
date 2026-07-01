@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+import re
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import Base, engine
 from app.routes.api import router
@@ -18,6 +19,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def clean_double_slashes(request: Request, call_next):
+    path = request.scope.get("path", "")
+    if "//" in path:
+        request.scope["path"] = re.sub(r"/+", "/", path)
+    return await call_next(request)
+
 
 app.include_router(router)
 
