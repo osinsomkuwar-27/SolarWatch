@@ -100,7 +100,7 @@ function History() {
   const isCountRate = chartData.some((d) => d.flux > 1.0);
 
   return (
-    <div className="mx-auto max-w-[1200px] px-8 py-10 flex flex-col gap-8">
+    <div className="mx-auto max-w-[1200px] px-4 sm:px-8 py-6 sm:py-10 flex flex-col gap-8">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 fade-in">
         <div>
           <span className="font-mono text-xs uppercase tracking-[0.22em] text-sky">
