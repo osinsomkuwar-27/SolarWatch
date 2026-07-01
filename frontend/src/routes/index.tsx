@@ -1,17 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { apiQueries } from "@/lib/api";
 import { AlertPanel } from "@/components/AlertPanel";
 import { FlareClassBadge } from "@/components/FlareClassBadge";
 import { FluxChart } from "@/components/FluxChart";
 import { PredictionCards } from "@/components/PredictionCards";
 import { SolarCycleWidget } from "@/components/SolarCycleWidget";
-import {
-  currentClass,
-  currentFlux,
-  fluxFormatter,
-  liveFlux,
-  lstmAlertProb,
-} from "@/lib/mock-data";
+import { fluxFormatter } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -34,6 +30,16 @@ export const Route = createFileRoute("/")({
 
 function Dashboard() {
   const [timeStr, setTimeStr] = useState<string>("");
+
+  const {
+    data: latestPrediction,
+    error: latestError,
+    isLoading: latestLoading,
+  } = useQuery(apiQueries.latestPrediction());
+
+  const { data: status } = useQuery(apiQueries.status());
+  const { data: lightCurve } = useQuery(apiQueries.lightCurve(300));
+
   useEffect(() => {
     const tick = () => {
       const d = new Date(Math.floor(Date.now() / 60000) * 60000);
@@ -43,6 +49,42 @@ function Dashboard() {
     const id = setInterval(tick, 30_000);
     return () => clearInterval(id);
   }, []);
+
+  if (latestLoading) {
+    return (
+      <div className="flex h-[80vh] items-center justify-center font-mono text-sm text-text-muted">
+        Connecting to SolarWatch telemetry...
+      </div>
+    );
+  }
+
+  if (latestError) {
+    return (
+      <div className="mx-auto max-w-[1200px] px-8 py-10 flex flex-col gap-6 font-mono text-destructive">
+        <h1 className="text-2xl font-bold">Telemetry Connection Lost</h1>
+        <p>{latestError.message || "Failed to load live forecast data from the backend."}</p>
+      </div>
+    );
+  }
+
+  // Derive parameters from live API data
+  const isFlareActive = latestPrediction?.nowcast.is_flare_active ?? false;
+  const currentClass = (latestPrediction?.nowcast.flare_class ?? "A") as any;
+  const currentFlux = latestPrediction?.raw_features.slx_counts ?? 0;
+  const nowcastProb = latestPrediction?.nowcast.flare_probability ?? 0;
+  const forecast30 = latestPrediction?.forecast.flare_probability_30min ?? 0;
+  const forecast60 = latestPrediction?.forecast.flare_probability_60min ?? 0;
+
+  // Format light curve points for FluxChart
+  const chartData = lightCurve
+    ? lightCurve.map((pt) => ({
+        time_tag: pt.timestamp,
+        flux: pt.slx_counts || 0,
+      }))
+    : [];
+
+  const showAdvisory = forecast60 >= 0.6 || isFlareActive;
+  const advisoryProb = isFlareActive ? nowcastProb : forecast60;
 
   return (
     <div className="mx-auto max-w-[1200px] px-8 py-10 flex flex-col gap-8">
@@ -58,7 +100,7 @@ function Dashboard() {
         </p>
       </header>
 
-      {lstmAlertProb >= 0.6 && <AlertPanel probability={lstmAlertProb} />}
+      {showAdvisory && <AlertPanel probability={advisoryProb} />}
 
       <section className="card-surface card-tint-sky p-6 fade-in">
         <div className="flex flex-col md:flex-row md:items-center gap-8">
@@ -66,11 +108,13 @@ function Dashboard() {
           <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div>
               <div className="font-mono text-xs uppercase tracking-[0.18em] text-text-faint">
-                Current flux (1–8 Å)
+                {currentFlux > 1.0 ? "SoLEXS Count Rate" : "Current flux (1–8 Å)"}
               </div>
               <div className="font-serif text-3xl text-solar mt-1">
-                {fluxFormatter(currentFlux)}
-                <span className="text-text-muted text-lg font-sans ml-1">W/m²</span>
+                {currentFlux > 1.0 ? currentFlux.toLocaleString() : fluxFormatter(currentFlux)}
+                <span className="text-text-muted text-lg font-sans ml-1">
+                  {currentFlux > 1.0 ? "counts/s" : "W/m²"}
+                </span>
               </div>
             </div>
             <div>
@@ -78,7 +122,11 @@ function Dashboard() {
                 Active region
               </div>
               <div className="font-serif text-2xl text-foreground mt-1">AR 13842</div>
-              <div className="text-sm text-text-muted">βγδ magnetic complexity</div>
+              <div className="text-sm text-text-muted">
+                {latestPrediction?.raw_features.flare_phase
+                  ? `Phase: ${latestPrediction.raw_features.flare_phase}`
+                  : "βγδ magnetic complexity"}
+              </div>
             </div>
             <div>
               <div className="font-mono text-xs uppercase tracking-[0.18em] text-text-faint">
@@ -88,9 +136,13 @@ function Dashboard() {
                 className="font-mono text-sm text-foreground mt-1 min-h-[1.25rem]"
                 suppressHydrationWarning
               >
-                {timeStr || "—"}
+                {latestPrediction
+                  ? new Date(latestPrediction.timestamp).toUTCString().replace("GMT", "UTC")
+                  : "—"}
               </div>
-              <div className="text-sm text-text-muted">GOES-18 primary feed</div>
+              <div className="text-sm text-text-muted">
+                {status?.scheduler_running ? "Live stream active" : "Offline data feed"}
+              </div>
             </div>
           </div>
         </div>
@@ -103,10 +155,14 @@ function Dashboard() {
             M+ probability
           </span>
         </div>
-        <PredictionCards />
+        <PredictionCards
+          nowcastProbability={nowcastProb}
+          forecast30MinProbability={forecast30}
+          forecast60MinProbability={forecast60}
+        />
       </section>
 
-      <FluxChart data={liveFlux} />
+      <FluxChart data={chartData} />
 
       <SolarCycleWidget />
     </div>
