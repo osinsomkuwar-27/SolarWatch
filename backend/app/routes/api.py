@@ -28,7 +28,7 @@ def get_predictions(
 
 @router.get("/lightcurve", response_model=List[schemas.LightCurvePoint])
 def get_lightcurve(
-    n: int = Query(default=300, le=3600),
+    n: int = Query(default=300, le=15000),
     db: Session = Depends(get_db)
 ):
     points = crud.get_recent_lightcurve(db, n)
@@ -58,3 +58,12 @@ def get_status(db: Session = Depends(get_db)):
         total_predictions_today = count,
         alert_active            = latest.is_flare_active if latest else False,
     )
+
+
+@router.post("/telemetry", response_model=schemas.PredictionOut)
+def post_telemetry(prediction: schemas.PredictionIn, db: Session = Depends(get_db)):
+    try:
+        db_pred = crud.save_prediction(db, prediction)
+        return schemas.PredictionOut.from_orm(db_pred)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
