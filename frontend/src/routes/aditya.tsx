@@ -27,11 +27,11 @@ const heroStats = [
 ];
 
 const integrationPlan = [
-  "Stream SoLEXS soft X-ray (1–22 keV) into the CNN input head as channel 1.",
-  "Stream HEL1OS hard X-ray (10–150 keV) as channel 2 — captures impulsive flare onset.",
-  "Re-train the LSTM head on combined Aditya-L1 + GOES tensor (256 × 4 channels).",
-  "Cross-validate with the SUIT UV imager active-region masks for spatial context.",
-  "Switch primary data source from NOAA GOES-18 to Aditya-L1 once L1 telemetry stabilises.",
+  "Ingest SoLEXS soft X-ray (2–22 keV) light curves from ISSDC PRADAN at 1-second cadence.",
+  "Ingest HEL1OS hard X-ray (8–150 keV) CdTe and CZT light curves from ISSDC PRADAN.",
+  "Engineer 20 features per second — rolling statistics, derivatives, spectral hardness ratios.",
+  "Run Random Forest classifier to predict P(quiet), P(pre-flare), P(flare) every 60 seconds.",
+  "Serve predictions via FastAPI — frontend displays live nowcast and 30/60-minute forecast.",
 ];
 
 function Aditya() {
@@ -69,12 +69,12 @@ function Aditya() {
           </span>
         </div>
         <p className="text-base text-text-muted leading-relaxed">
-          Two SCD detectors covering 1–22 keV at ~180 eV resolution, sampling soft X-ray flux
+          Two SDD detectors covering 2–22 keV at ~180 eV resolution, sampling soft X-ray flux
           every second. Characterises the thermal phase of solar flares and feeds real-time
           spectroscopy to ground.
         </p>
         <div className="grid grid-cols-3 gap-3 mt-5">
-          <Stat label="Energy" value="1–22 keV" />
+          <Stat label="Energy" value="2–22 keV" />
           <Stat label="Cadence" value="1 s" />
           <Stat label="Resolution" value="~180 eV" />
         </div>

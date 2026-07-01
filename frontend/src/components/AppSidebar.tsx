@@ -75,7 +75,7 @@ export function AppSidebar() {
           Data Source
         </div>
         <div className="mt-1 text-sm text-text-muted">
-          NOAA SWPC · GOES-18
+          ISSDC PRADHAN · ADITYA-L1
         </div>
         <div className="mt-3 flex items-center gap-2">
           <span className="relative flex h-2 w-2">

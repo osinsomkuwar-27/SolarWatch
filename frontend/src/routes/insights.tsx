@@ -31,8 +31,8 @@ function Insights() {
           Inside the <em className="text-text-muted">forecaster</em>
         </h1>
         <p className="text-base text-text-muted mt-2 max-w-xl">
-          A 1D CNN reads short-term shape; a stacked LSTM learns temporal context. Together
-          they nowcast flare class up to six hours ahead.
+          "A Random Forest trained on 73 days of real Aditya-L1 data. Detects solar flares 
+          from SoLEXS soft X-ray and HEL1OS hard X-ray features at 1-second cadence."
         </p>
       </header>
 
@@ -50,8 +50,8 @@ function Insights() {
           </div>
         </div>
         <p className="flex-1 text-base text-text-muted leading-relaxed">
-          Trained on 14 years of NOAA GOES X-ray flux (2010–2024). Validated on a held-out
-          12-month window covering the ascending phase of Solar Cycle 25.
+          Trained on 73 days of real Aditya-L1 satellite data (July 2024 – June 2026).
+          Validated using cross-block temporal holdout on unseen solar periods.
         </p>
       </section>
 

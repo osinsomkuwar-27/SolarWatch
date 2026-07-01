@@ -136,7 +136,7 @@ export function PredictionCards({
       <div className="flex gap-7 mt-8 pt-3.5 border-t border-border">
         <div>
           <div className="font-mono text-xs uppercase tracking-wider text-text-faint">Model</div>
-          <div className="text-sm text-foreground mt-0.5">1D CNN + LSTM</div>
+          <div className="text-sm text-foreground mt-0.5">RANDOM FOREST CLASSIFIER</div>
         </div>
         <div>
           <div className="font-mono text-xs uppercase tracking-wider text-text-faint">Source</div>

@@ -55,26 +55,30 @@ export const historicalEvents = [
 ];
 
 export const perClassMetrics = [
-  { cls: "A", precision: 0.97, recall: 0.96, f1: 0.965 },
-  { cls: "B", precision: 0.94, recall: 0.93, f1: 0.935 },
-  { cls: "C", precision: 0.91, recall: 0.89, f1: 0.9 },
-  { cls: "M", precision: 0.86, recall: 0.82, f1: 0.84 },
-  { cls: "X", precision: 0.78, recall: 0.71, f1: 0.74 },
+  { cls: "Quiet",     precision: 0.79, recall: 0.69, f1: 0.73 },
+  { cls: "Pre-flare", precision: 0.16, recall: 0.25, f1: 0.19 },
+  { cls: "Flare",     precision: 0.44, recall: 0.61, f1: 0.51 },
 ];
 
-export const overallAccuracy = 0.913;
+export const overallAccuracy = 0.610;
 
 export const architectureLayers = [
-  "Input  → (256, 2)  // 256 timesteps, [soft, hard] X-ray flux",
-  "Conv1D → filters=64, kernel=5, ReLU",
-  "Conv1D → filters=128, kernel=5, ReLU",
-  "MaxPool1D → pool=2",
-  "Conv1D → filters=128, kernel=3, ReLU",
-  "MaxPool1D → pool=2",
-  "LSTM   → units=128, return_seq=True",
-  "LSTM   → units=64",
-  "Dense  → units=32, ReLU + Dropout(0.3)",
-  "Dense  → units=5, Softmax  // [A, B, C, M, X]",
+  "Algorithm     Random Forest Classifier",
+  "Estimators    200 trees · max depth 12 · min samples leaf 5",
+  "Class weight  Balanced (handles flare rarity ~11% of data)",
+  "Imputation    Median strategy (handles instrument gaps)",
+  "",
+  "Input  → (1, 20)  // 20 engineered features per second",
+  "                  // SoLEXS + HEL1OS · rolling stats · derivatives",
+  "",
+  "Output → P(quiet), P(pre-flare), P(flare)",
+  "",
+  "Training data  73 days · 6.3M rows · July 2024 – June 2026",
+  "               Aditya-L1 SoLEXS + HEL1OS · 1-second cadence",
+  "Labels         GOES XRS flare catalog",
+  "Validation     Cross-block temporal (leave-one-block-out)",
+  "",
+  "Peak result    flare_prob = 0.999 at 19:28 UTC June 21 2026",
 ];
 
 export function fluxFormatter(v: number) {
