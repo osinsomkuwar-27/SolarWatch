@@ -28,7 +28,7 @@ def get_predictions(
 
 @router.get("/lightcurve", response_model=List[schemas.LightCurvePoint])
 def get_lightcurve(
-    n: int = Query(default=300, le=3600),
+    n: int = Query(default=300, le=15000),
     db: Session = Depends(get_db)
 ):
     points = crud.get_recent_lightcurve(db, n)
