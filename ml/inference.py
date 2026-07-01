@@ -13,10 +13,17 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timezone
 from pathlib import Path
+import requests
+import os
 
 MODEL_PATH      = "models/flare_model_v1.pkl"
 DATA_PATH       = "data/master_dataset_features.parquet"
-OUTPUT_PATH = r"D:\Coding\solar\backend\mock\latest_prediction.json"
+
+# Dynamic path to the real backend mock folder
+BASE_DIR = Path(__file__).parent.parent
+OUTPUT_PATH = BASE_DIR / "backend" / "mock" / "latest_prediction.json"
+API_URL = os.getenv("API_URL") # E.g., 'https://solar-rzv2.onrender.com'
+
 DEMO_DATE       = "2026-06-21"
 REPLAY_INTERVAL = 1  
 
@@ -165,11 +172,21 @@ def run_demo_replay():
         with open(output_path, "w") as f:
             json.dump(payload, f, indent=2)
 
+        # If API_URL is configured, also POST the telemetry to the backend!
+        if API_URL:
+            try:
+                res = requests.post(f"{API_URL.rstrip('/')}/api/telemetry", json=payload, timeout=5)
+                api_status = f"HTTP POST: {res.status_code}"
+            except Exception as e:
+                api_status = f"HTTP POST Failed: {str(e)}"
+        else:
+            api_status = "Local File Only"
+
         label_name = CLASS_NAMES[pred_class]
         print(f"[{i+1}/{len(demo_sampled)}] {timestamp[:19]} | "
               f"pred={label_name:<10} | "
               f"flare_prob={proba[2]:.3f} | "
-              f"pre_prob={proba[1]:.3f}")
+              f"{api_status}")
 
         time.sleep(1)
 

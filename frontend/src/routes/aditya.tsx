@@ -36,7 +36,7 @@ const integrationPlan = [
 
 function Aditya() {
   return (
-    <div className="mx-auto max-w-[960px] px-8 py-10 flex flex-col gap-8">
+    <div className="mx-auto max-w-[960px] px-4 sm:px-8 py-6 sm:py-10 flex flex-col gap-8">
       <header className="fade-in">
         <span className="font-mono text-xs uppercase tracking-[0.22em] text-sky">
           ISRO Mission

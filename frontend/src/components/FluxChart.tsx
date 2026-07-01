@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import type { FluxPoint } from "@/lib/mock-data";
 import { fluxFormatter } from "@/lib/mock-data";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type Props = {
   data: FluxPoint[];
@@ -24,6 +25,9 @@ export function FluxChart({
   title = "Solar X-Ray Flux",
   subtitle = "GOES-18 · 1–8 Å · W/m²",
 }: Props) {
+  const isMobile = useIsMobile();
+  const chartHeight = isMobile ? Math.min(height, 220) : height;
+
   // Detect if the data contains count rates (e.g. SoLEXS count values > 1.0) rather than GOES W/m^2
   const isCountRate = data.some((d) => d.flux > 1.0);
   const dynamicSubtitle =
@@ -32,8 +36,8 @@ export function FluxChart({
       : subtitle;
 
   return (
-    <div className="card-surface p-5 fade-in">
-      <div className="flex items-end justify-between mb-4">
+    <div className="card-surface p-4 sm:p-5 fade-in">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-4">
         <div>
           <h3 className="font-serif text-lg text-foreground">{title}</h3>
           <p className="font-mono text-xs uppercase tracking-[0.16em] text-text-faint mt-1">
@@ -56,9 +60,9 @@ export function FluxChart({
           )}
         </div>
       </div>
-      <div style={{ width: "100%", height }}>
+      <div style={{ width: "100%", height: chartHeight }}>
         <ResponsiveContainer>
-          <LineChart data={data} margin={{ top: 8, right: 24, left: 8, bottom: 8 }}>
+          <LineChart data={data} margin={{ top: 8, right: isMobile ? 8 : 24, left: isMobile ? -16 : 8, bottom: 8 }}>
             <CartesianGrid stroke="rgba(11,25,41,0.06)" vertical={false} />
             <XAxis
               dataKey="time_tag"
@@ -82,7 +86,7 @@ export function FluxChart({
               tick={{ fill: "#4A4A4A", fontSize: 10, fontFamily: "JetBrains Mono" }}
               stroke="rgba(11,25,41,0.1)"
               ticks={isCountRate ? undefined : [1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3]}
-              width={68}
+              width={isMobile ? 48 : 68}
             />
             <Tooltip
               contentStyle={{
